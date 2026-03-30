@@ -66,6 +66,47 @@ def porcentagem():
     l_porcentagem = Label(frameMeio, text="{:,.2f}%".format(valor), anchor=NW, font=('Verdana 12'), bg=cor1, fg=cor4)
     l_porcentagem.place(x=200, y=35)
 
+#função para o grafico
+def grafico_bar():
+    lista_categorias = ['Rendas', 'Despesas', 'Saldo']
+    lista_valores = [3000, 2000, 6236]
+
+    figura = plt.Figure(figsize=(4, 3.45), dpi=60)
+    ax = figura.add_subplot(111)
+
+    ax.bar(lista_categorias, lista_valores, color=colors[:3], width=0.9)
+
+    c = 0
+
+    for i in ax.patches:
+        ax.text(i.get_x() + i.get_width()/2,
+                i.get_height() + 100,
+                str("{:,.0f}".format(lista_valores[c])), fontsize=17, fontstyle='italic', ha='center', va='bottom')              
+        c += 1       
+
+    ax.tick_params(axis='x', labelsize=12)
+
+    ax.patch.set_facecolor('#ffffff')
+    ax.spines['bottom'].set_color('#CCCCCC')
+    ax.spines['bottom'].set_linewidth(1)
+    ax.spines['right'].set_linewidth(0)
+    ax.spines['top'].set_linewidth(0)
+    ax.spines['left'].set_color('#CCCCCC')
+    ax.spines['left'].set_linewidth(1)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(bottom=False, left=False)
+    ax.set_axisbelow(True)
+    ax.yaxis.grid(True, color='#EEEEEE')
+    ax.xaxis.grid(False)
+
+    canva = FigureCanvasTkAgg(figura, frameMeio)
+    canva.get_tk_widget().place(x=10, y=70)
+
+
 porcentagem()
+grafico_bar()
 janela.mainloop()
 
