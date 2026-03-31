@@ -105,8 +105,68 @@ def grafico_bar():
     canva = FigureCanvasTkAgg(figura, frameMeio)
     canva.get_tk_widget().place(x=10, y=70)
 
+#painel de resumo
+def resumo():
+    Label(frameMeio, text="TOTAL RENDA MENSAL", anchor=NW,
+          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=40)
+    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=60)
+    
+    Label(frameMeio, text="R$ 500.00", anchor=NW,
+          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=65)
+    
+    Label(frameMeio, text="TOTAL DESPESAS MENSAIS", anchor=NW,
+          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=110)
+    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=130)
+
+    Label(frameMeio, text="R$ 600.00", anchor=NW,
+          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=135)
+    
+    Label(frameMeio, text="TOTAL SALDO DA CAIXA", anchor=NW,
+          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=180)
+    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=200)
+
+    Label(frameMeio, text="R$ 420.00", anchor=NW,
+          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=205)
+
+#grafico pizza
+def grafico_pizza():
+    lista_categorias = ['Renda', 'Despezas', 'Saldo']
+    lista_valores = [3000, 2000, 6236]
+
+    cores = ['#4e79a7', '#76b7b2', '#9cba5a']
+
+    fig = Figure(figsize=(4.8, 4), dpi=75)
+    ax = fig.add_subplot(111)
+
+    wedges, texts, autotexts = ax.pie(lista_valores, autopct='%1.1f%%', startangle=90, colors=cores, wedgeprops=dict(width=0.3))
+    #centro = plt.Circle((0, 0), 0.70, fc='white')
+    #fig.gca().add_artist(centro)
+
+    ax.axis('equal')
+
+    fig.subplots_adjust(right=0.7)
+
+    ax.legend(
+        wedges, 
+        lista_categorias, 
+        loc='center left', 
+        bbox_to_anchor=(1, 0.5),
+        fontsize=10,
+        frameon=False 
+    )
+    
+    #legenda
+    ax.legend(wedges, lista_categorias, loc='center left', bbox_to_anchor=(1, 0.5))
+
+    canvas = FigureCanvasTkAgg(fig, frameMeio)
+    canvas.get_tk_widget().place(x=540, y=20)
+
+
+
 
 porcentagem()
 grafico_bar()
+resumo()
+grafico_pizza()
 janela.mainloop()
 
