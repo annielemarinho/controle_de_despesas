@@ -5,7 +5,8 @@ from tkinter.ttk import Progressbar
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-
+from tkcalendar import Calendar, DateEntry
+from datetime import date
 
 #cores
 cor0 = "#2e2d2b"
@@ -162,11 +163,143 @@ def grafico_pizza():
     canvas.get_tk_widget().place(x=540, y=20)
 
 
-
-
 porcentagem()
 grafico_bar()
 resumo()
 grafico_pizza()
+
+#Criando frames dentro do FrameBaixo
+frame_renda = Frame(frameBaixo, width=300, height=250, bg=cor1, relief="flat")
+frame_renda.grid(row=0, column=0, sticky=NSEW)
+
+frame_operacoes = Frame(frameBaixo, width=220, height=250, bg=cor1, relief="flat")
+frame_operacoes.grid(row=0, column=1, padx=5, sticky=NSEW)
+
+frame_configuracao = Frame(frameBaixo, width=220, height=250, bg=cor1, relief="flat")
+frame_configuracao.grid(row=0, column=2, padx=5, sticky=NSEW)
+
+
+#tabela renda mensal
+app_tabela = Label(frameMeio, text=" Tabela Receitas e Despesas", anchor=NW, font=('Verdana 12'), bg=cor1, fg=cor4)
+app_tabela.place(x=5, y=309)
+
+#função para mostrar tabela
+def mostrar_tabela():
+    tabela_head = ['#Id', 'Categoria', 'Data', 'Quantia']
+
+    lista_itens = [[0,2,3,4], [0,2,3,4], [0,2,3,4], [0,2,3,4]]
+
+    global tree 
+
+    tree = ttk.Treeview(frame_renda, selectmode="extended", columns=tabela_head, show="headings")
+    vsb = ttk.Scrollbar(frame_renda, orient="vertical", command=tree.yview)
+    hsb = ttk.Scrollbar(frame_renda, orient="horizontal", command=tree.xview)
+
+    tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+    tree.grid(column=0, row=0, sticky='nsew')
+    vsb.grid(column=1, row=0, sticky='ns')
+    hsb.grid(column=0, row=1, sticky='ew')
+
+    hd = ["center", "center", "center", "center"]
+    h = [30, 100, 100, 100]
+    n = 0
+
+    for col in tabela_head:
+        tree.heading(col, text=col.title(), anchor=CENTER)
+        tree.column(col, width=h[n], anchor=hd[n])
+
+        n+=1
+
+    for item in lista_itens:
+        tree.insert('', 'end', values=item)
+
+mostrar_tabela()
+
+#configuraçoes despesas
+l_info = Label(frame_operacoes, text='Insira novas despesas', height=1, anchor=NW, font=('Verdana 10 bold'), bg=cor1, fg=cor4)
+l_info.place(x=10, y=10)
+
+#categoria
+l_categoria = Label(frame_operacoes, text='Categoria', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_categoria.place(x=10, y=40)
+
+#pegando categorias
+categoria_funcao = ['Viagem', 'Comida']
+categoria = []
+
+for i in categoria_funcao:
+    categoria.append(i[1])
+
+combo_categoria_despesas = ttk.Combobox(frame_operacoes, width=10, font=('Ivy 10'))
+combo_categoria_despesas['values'] = (categoria)
+combo_categoria_despesas.place(x=110, y=41)
+
+#despesas
+l_cal_despesas = Label(frame_operacoes, text='Data', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_cal_despesas.place(x=10, y=70)
+e_cal_despesas = DateEntry(frame_operacoes, width=12, background='darkblues', foreground='white', borderwidth=2, year=2026)
+e_cal_despesas.place(x=110, y=71)
+
+#valor
+l_valor_despesas = Label(frame_operacoes, text='Quantia Total', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_valor_despesas.place(x=10, y=100)
+e_valor_despesas = Entry(frame_operacoes, width=14, justify='left', relief='solid')
+e_valor_despesas.place(x=110, y=101)
+
+#botao inserir
+img_add_despesas = Image.open('add.png')
+img_add_despesas = img_add_despesas.resize((17, 17))
+img_add_despesas = ImageTk.PhotoImage(img_add_despesas)
+botao_inserir_despesas = Button(frame_operacoes, image=img_add_despesas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_despesas.place(x=110, y=131)
+
+#botao excluir
+l_excluir = Label(frame_operacoes, text='Excluir ação', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_excluir.place(x=10, y=190)
+
+img_delete = Image.open('delete.png')
+img_delete = img_delete.resize((17, 17))
+img_delete = ImageTk.PhotoImage(img_delete)
+botao_deletar = Button(frame_operacoes, image=img_delete, text=" Deletar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_deletar.place(x=110, y=190)
+
+#configurando receitas
+l_info = Label(frame_configuracao, text='Insira novas receitas', height=1, anchor=NW, font=('Verdana 10 bold'), bg=cor1, fg=cor4)
+l_info.place(x=10, y=10)
+
+#calendario
+l_cal_receitas = Label(frame_configuracao, text='Data', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_cal_receitas.place(x=10, y=40)
+e_cal_receitas = DateEntry(frame_configuracao, width=12, background='darkblues', foreground='white', borderwidth=2, year=2026)
+e_cal_receitas.place(x=110, y=41)
+
+#valor
+l_valor_receitas = Label(frame_configuracao, text='Quantia Total', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
+l_valor_receitas.place(x=10, y=70)
+e_valor_receitas = Entry(frame_configuracao, width=14, justify='left', relief='solid')
+e_valor_receitas.place(x=110, y=71)
+
+#botao inserir
+img_add_receitas = Image.open('add.png')
+img_add_receitas = img_add_receitas.resize((17, 17))
+img_add_receitas = ImageTk.PhotoImage(img_add_receitas)
+botao_inserir_receitas = Button(frame_configuracao, image=img_add_receitas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_receitas.place(x=110, y=111)
+
+#configurando nova categoria
+l_info = Label(frame_configuracao, text='Categoria', height=1, anchor=NW, font=('Ivy 10 bold'), bg=cor1, fg=cor4)
+l_info.place(x=10, y=160)
+
+e_categoria = Entry(frame_configuracao, width=14, justify='left', relief='solid')
+e_categoria.place(x=110, y=160)
+
+#botao inserir
+img_add_categoria = Image.open('add.png')
+img_add_categoria = img_add_categoria.resize((17, 17))
+img_add_categoria = ImageTk.PhotoImage(img_add_categoria)
+botao_inserir_categoria = Button(frame_configuracao, image=img_add_categoria, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_categoria.place(x=110, y=190)
+
 janela.mainloop()
 
