@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import Tk, ttk
+from tkinter import messagebox
 from PIL import Image, ImageTk
 from tkinter.ttk import Progressbar
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from tkcalendar import Calendar, DateEntry
 from datetime import date
+from view import inserir_categoria, inserir_receita, inserir_gastos, ver_categoria
 
 #cores
 cor0 = "#2e2d2b"
@@ -49,6 +51,31 @@ app_img = ImageTk.PhotoImage(app_img)
 
 app_logo = Label(frameCima, image=app_img, text=" Controle de Despesas", width=900, compound=LEFT, padx=5, relief=RAISED, anchor=NW, font=('Verdana 20 bold'), bg=cor1, fg=cor4)
 app_logo.place(x=0, y=0)
+
+#defnindo tree como global
+global tree
+
+#função inserir categoria
+def adicionar_categoria():
+    nome = e_categoria.get()
+    lista_inserir = [nome]
+
+    for i in lista_inserir:
+        if i == '':
+            messagebox.showerror('Erro', 'Preencha todos os campos')
+            return
+    inserir_categoria(lista_inserir)
+    messagebox.showinfo('Sucesso', 'Os dados foram inseridos com sucesso')
+
+    e_categoria.delete(0, 'end')
+
+    categoria_funcao = ver_categoria()
+    categoria = []
+
+    for i in categoria_funcao:
+        categoria.append(i[1])
+
+    combo_categoria_despesas['values'] = (categoria)
 
 # porcentagem
 def porcentagem():
@@ -298,7 +325,7 @@ e_categoria.place(x=110, y=160)
 img_add_categoria = Image.open('add.png')
 img_add_categoria = img_add_categoria.resize((17, 17))
 img_add_categoria = ImageTk.PhotoImage(img_add_categoria)
-botao_inserir_categoria = Button(frame_configuracao, image=img_add_categoria, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_categoria = Button(frame_configuracao,command=adicionar_categoria, image=img_add_categoria, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
 botao_inserir_categoria.place(x=110, y=190)
 
 janela.mainloop()
