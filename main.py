@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from tkcalendar import Calendar, DateEntry
 from datetime import date
-from view import inserir_categoria, inserir_receita, inserir_gastos, ver_categoria
+from view import inserir_categoria, inserir_receita, inserir_gastos, ver_categoria, tabela, deletar_gastos, deletar_receitas, bar_valores, pie_valores, porcentagem_valor
 
 #cores
 cor0 = "#2e2d2b"
@@ -22,11 +22,13 @@ cor7 = "#3fbfb9"
 cor8 = "#263238"
 cor9 = "#e9edf5"
 
+
 colors = ['#5588bb', '#66bbbb', '#99bb55', '#ee9944', '#444466', '#bb5555']
+
 
 #criando janela
 janela = Tk()
-janela.title()
+janela.title('Controle de Despesas')
 janela.geometry('900x650')
 janela.configure(background=cor9)
 janela.resizable(width=FALSE, height=FALSE)
@@ -52,8 +54,15 @@ app_img = ImageTk.PhotoImage(app_img)
 app_logo = Label(frameCima, image=app_img, text=" Controle de Despesas", width=900, compound=LEFT, padx=5, relief=RAISED, anchor=NW, font=('Verdana 20 bold'), bg=cor1, fg=cor4)
 app_logo.place(x=0, y=0)
 
-#defnindo tree como global
-global tree
+tree = None
+
+_bar_progress   = None
+_label_pct      = None
+_canvas_bar     = None
+_canvas_pizza   = None
+_label_receita  = None
+_label_despesa  = None
+_label_saldo    = None
 
 #função inserir categoria
 def adicionar_categoria():
@@ -77,117 +86,225 @@ def adicionar_categoria():
 
     combo_categoria_despesas['values'] = (categoria)
 
+
+#função adicionar receitas
+def adicionar_receitas():  
+    nome = 'Receita'
+    data = e_cal_receitas.get()
+    quantia_raw = e_valor_receitas.get().strip().replace(',', '.')
+
+    if not data or not quantia_raw:
+        messagebox.showerror('Erro', 'Preencha todos os campos')
+        return
+
+    try:
+        quantia = float(quantia_raw)
+        if quantia <= 0:
+            raise ValueError
+    except ValueError:
+        messagebox.showerror('Erro', 'Quantia inválida. Use apenas números positivos.')
+        return
+
+    inserir_receita([nome, data, quantia])
+    messagebox.showinfo('Sucesso', 'Os dados foram inseridos com sucesso')
+
+    e_cal_receitas.delete(0, 'end')
+    e_valor_receitas.delete(0, 'end')
+
+    mostrar_tabela()
+    porcentagem()
+    grafico_bar()
+    resumo()
+    grafico_pizza()
+
+#função adicionar despesas
+def adicionar_despesas():
+    nome = combo_categoria_despesas.get().strip()
+    data = e_cal_despesas.get()
+    quantia_raw = e_valor_despesas.get().strip().replace(',', '.')
+
+    if not nome or not data or not quantia_raw:
+        messagebox.showerror('Erro', 'Preencha todos os campos')
+        return
+
+    try:
+        quantia = float(quantia_raw)
+        if quantia <= 0:
+            raise ValueError
+    except ValueError:
+        messagebox.showerror('Erro', 'Quantia inválida. Use apenas números positivos.')
+        return
+
+    inserir_gastos([nome, data, quantia])
+    messagebox.showinfo('Sucesso', 'Os dados foram inseridos com sucesso')
+
+    combo_categoria_despesas.delete(0, 'end')
+    e_cal_despesas.delete(0, 'end')
+    e_valor_despesas.delete(0, 'end')
+
+    mostrar_tabela()
+    porcentagem()
+    grafico_bar()
+    resumo()
+    grafico_pizza()
+
+#funcao deletar
+def deletar_dados():
+    try:
+        treev_dados = tree.focus()
+        treev_dicionario = tree.item(treev_dados)
+        treev_lista = treev_dicionario['values']
+        
+        # Verifica se algo foi selecionado para evitar erro de lista vazia
+        if not treev_lista:
+            messagebox.showerror('Erro', 'Selecione um dos dados na tabela')
+            return
+
+        # Extrai os dados da linha selecionada
+        id_registro = treev_lista[0]      # O ID do banco de dados
+        categoria_registro = treev_lista[1] # A categoria (ex: 'Receita' ou 'Aluguel')
+
+        # Se a categoria for exatamente 'Receita', deleta da tabela de receitas
+        if categoria_registro == 'Receita':
+            deletar_receitas([id_registro])
+        else:
+            # Caso contrário (qualquer outra categoria), deleta da tabela de gastos
+            deletar_gastos([id_registro])
+
+        messagebox.showinfo('Sucesso', 'Os dados foram deletados com sucesso')
+
+        # Atualiza todos os componentes visuais após a exclusão
+        mostrar_tabela()
+        porcentagem()
+        grafico_bar()
+        resumo()
+        grafico_pizza()
+
+    except Exception as e:
+        # Mostra o erro real caso algo dê errado no processo
+        messagebox.showerror('Erro', f'Não foi possível deletar: {e}')
+
 # porcentagem
 def porcentagem():
-    l_nome = Label(frameMeio, text="Porcentagem da receita gasta", height=1, anchor=NW, font=('Verdana 12'), bg=cor1, fg=cor4)
-    l_nome.place(x=7, y=5)
+    global _bar_progress, _label_pct
 
-    style = ttk.Style()
-    style.theme_use('default')
-    style.configure("black.Horizontal.TProgressbar", background='#daed6b')
-    style.configure("TProgressbar", thickness=25)
-    bar = Progressbar(frameMeio, length=180, style='black.Horizontal.TProgressbar')
-    bar.place(x=10, y=35)
-    bar['value'] = 50
+    valor = porcentagem_valor()[0]
 
-    valor = 50
-    l_porcentagem = Label(frameMeio, text="{:,.2f}%".format(valor), anchor=NW, font=('Verdana 12'), bg=cor1, fg=cor4)
-    l_porcentagem.place(x=200, y=35)
+    if _bar_progress is None:
+        Label(frameMeio, text="Porcentagem da receita gasta", height=1,
+              anchor=NW, font=('Verdana 12'), bg=cor1, fg=cor4).place(x=7, y=5)
+
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("black.Horizontal.TProgressbar", background='#daed6b')
+        style.configure("TProgressbar", thickness=25)
+
+        _bar_progress = Progressbar(frameMeio, length=180,
+                                    style='black.Horizontal.TProgressbar')
+        _bar_progress.place(x=10, y=35)
+
+        _label_pct = Label(frameMeio, text="", anchor=NW,
+                           font=('Verdana 12'), bg=cor1, fg=cor4)
+        _label_pct.place(x=200, y=35)
+
+    _bar_progress['value'] = valor
+    _label_pct.config(text="{:,.2f}%".format(valor))
 
 #função para o grafico
 def grafico_bar():
+    global _canvas_bar
+
     lista_categorias = ['Rendas', 'Despesas', 'Saldo']
-    lista_valores = [3000, 2000, 6236]
+    lista_valores = bar_valores()
 
     figura = plt.Figure(figsize=(4, 3.45), dpi=60)
     ax = figura.add_subplot(111)
-
     ax.bar(lista_categorias, lista_valores, color=colors[:3], width=0.9)
 
-    c = 0
-
-    for i in ax.patches:
-        ax.text(i.get_x() + i.get_width()/2,
-                i.get_height() + 100,
-                str("{:,.0f}".format(lista_valores[c])), fontsize=17, fontstyle='italic', ha='center', va='bottom')              
-        c += 1       
+    for c, patch in enumerate(ax.patches):
+        ax.text(patch.get_x() + patch.get_width() / 2,
+                patch.get_height() + 100,
+                "{:,.0f}".format(lista_valores[c]),
+                fontsize=17, fontstyle='italic', ha='center', va='bottom')
 
     ax.tick_params(axis='x', labelsize=12)
-
     ax.patch.set_facecolor('#ffffff')
+    for spine in ['top', 'right', 'left']:
+        ax.spines[spine].set_visible(False)
     ax.spines['bottom'].set_color('#CCCCCC')
-    ax.spines['bottom'].set_linewidth(1)
-    ax.spines['right'].set_linewidth(0)
-    ax.spines['top'].set_linewidth(0)
-    ax.spines['left'].set_color('#CCCCCC')
-    ax.spines['left'].set_linewidth(1)
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['left'].set_visible(False)
     ax.tick_params(bottom=False, left=False)
     ax.set_axisbelow(True)
     ax.yaxis.grid(True, color='#EEEEEE')
     ax.xaxis.grid(False)
 
-    canva = FigureCanvasTkAgg(figura, frameMeio)
-    canva.get_tk_widget().place(x=10, y=70)
+    if _canvas_bar is not None:
+        _canvas_bar.get_tk_widget().destroy()
+
+    _canvas_bar = FigureCanvasTkAgg(figura, frameMeio)
+    _canvas_bar.get_tk_widget().place(x=10, y=70)
 
 #painel de resumo
 def resumo():
-    Label(frameMeio, text="TOTAL RENDA MENSAL", anchor=NW,
-          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=40)
-    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=60)
-    
-    Label(frameMeio, text="R$ 500.00", anchor=NW,
-          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=65)
-    
-    Label(frameMeio, text="TOTAL DESPESAS MENSAIS", anchor=NW,
-          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=110)
-    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=130)
+    global _label_receita, _label_despesa, _label_saldo
 
-    Label(frameMeio, text="R$ 600.00", anchor=NW,
-          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=135)
-    
-    Label(frameMeio, text="TOTAL SALDO DA CAIXA", anchor=NW,
-          font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=180)
-    Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=200)
+    receita_total, despesas_total, saldo_total = bar_valores()
+    cor_saldo = cor6 if saldo_total >= 0 else cor5
 
-    Label(frameMeio, text="R$ 420.00", anchor=NW,
-          font=('Verdana 16'), bg=cor1, fg=cor4).place(x=300, y=205)
+    if _label_receita is None:
+        Label(frameMeio, text="TOTAL RENDA MENSAL", anchor=NW,
+              font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=40)
+        Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=60)
+
+        Label(frameMeio, text="TOTAL DESPESAS MENSAIS", anchor=NW,
+              font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=110)
+        Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=130)
+
+        Label(frameMeio, text="TOTAL SALDO DA CAIXA", anchor=NW,
+              font=('Verdana 12'), bg=cor1, fg=cor6).place(x=300, y=180)
+        Frame(frameMeio, width=230, height=1, bg=cor4).place(x=300, y=200)
+
+        _label_receita = Label(frameMeio, text="", anchor=NW,
+                               font=('Verdana 16'), bg=cor1, fg=cor4)
+        _label_receita.place(x=300, y=65)
+
+        _label_despesa = Label(frameMeio, text="", anchor=NW,
+                               font=('Verdana 16'), bg=cor1, fg=cor4)
+        _label_despesa.place(x=300, y=135)
+
+        _label_saldo = Label(frameMeio, text="", anchor=NW,
+                             font=('Verdana 16'), bg=cor1, fg=cor4)
+        _label_saldo.place(x=300, y=205)
+
+    _label_receita.config(text=f"R$ {receita_total:,.2f}")
+    _label_despesa.config(text=f"R$ {despesas_total:,.2f}")
+    _label_saldo.config(text=f"R$ {saldo_total:,.2f}", fg=cor_saldo)
 
 #grafico pizza
 def grafico_pizza():
-    lista_categorias = ['Renda', 'Despezas', 'Saldo']
-    lista_valores = [3000, 2000, 6236]
+    global _canvas_pizza
+
+    categorias, valores = pie_valores()
+
+    if not valores:
+        return
 
     cores = ['#4e79a7', '#76b7b2', '#9cba5a']
 
     fig = Figure(figsize=(4.8, 4), dpi=75)
     ax = fig.add_subplot(111)
 
-    wedges, texts, autotexts = ax.pie(lista_valores, autopct='%1.1f%%', startangle=90, colors=cores, wedgeprops=dict(width=0.3))
-    #centro = plt.Circle((0, 0), 0.70, fc='white')
-    #fig.gca().add_artist(centro)
-
+    wedges, _, _ = ax.pie(valores, autopct='%1.1f%%', startangle=90,
+                          colors=cores, wedgeprops=dict(width=0.3))
     ax.axis('equal')
-
     fig.subplots_adjust(right=0.7)
+    ax.legend(wedges, categorias, loc='center left',
+              bbox_to_anchor=(1, 0.5), fontsize=10, frameon=False)
 
-    ax.legend(
-        wedges, 
-        lista_categorias, 
-        loc='center left', 
-        bbox_to_anchor=(1, 0.5),
-        fontsize=10,
-        frameon=False 
-    )
-    
-    #legenda
-    ax.legend(wedges, lista_categorias, loc='center left', bbox_to_anchor=(1, 0.5))
+    if _canvas_pizza is not None:
+        _canvas_pizza.get_tk_widget().destroy()
 
-    canvas = FigureCanvasTkAgg(fig, frameMeio)
-    canvas.get_tk_widget().place(x=540, y=20)
+    _canvas_pizza = FigureCanvasTkAgg(fig, frameMeio)
+    _canvas_pizza.get_tk_widget().place(x=540, y=20)
 
 
 porcentagem()
@@ -212,11 +329,13 @@ app_tabela.place(x=5, y=309)
 
 #função para mostrar tabela
 def mostrar_tabela():
+    global tree
+
+    if tree is not None:
+        tree.destroy()
+
     tabela_head = ['#Id', 'Categoria', 'Data', 'Quantia']
-
-    lista_itens = [[0,2,3,4], [0,2,3,4], [0,2,3,4], [0,2,3,4]]
-
-    global tree 
+    lista_itens = tabela()
 
     tree = ttk.Treeview(frame_renda, selectmode="extended", columns=tabela_head, show="headings")
     vsb = ttk.Scrollbar(frame_renda, orient="vertical", command=tree.yview)
@@ -230,13 +349,10 @@ def mostrar_tabela():
 
     hd = ["center", "center", "center", "center"]
     h = [30, 100, 100, 100]
-    n = 0
 
-    for col in tabela_head:
+    for n, col in enumerate(tabela_head):
         tree.heading(col, text=col.title(), anchor=CENTER)
         tree.column(col, width=h[n], anchor=hd[n])
-
-        n+=1
 
     for item in lista_itens:
         tree.insert('', 'end', values=item)
@@ -252,7 +368,7 @@ l_categoria = Label(frame_operacoes, text='Categoria', height=1, anchor=NW, font
 l_categoria.place(x=10, y=40)
 
 #pegando categorias
-categoria_funcao = ['Viagem', 'Comida']
+categoria_funcao = ver_categoria()
 categoria = []
 
 for i in categoria_funcao:
@@ -278,7 +394,7 @@ e_valor_despesas.place(x=110, y=101)
 img_add_despesas = Image.open('add.png')
 img_add_despesas = img_add_despesas.resize((17, 17))
 img_add_despesas = ImageTk.PhotoImage(img_add_despesas)
-botao_inserir_despesas = Button(frame_operacoes, image=img_add_despesas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_despesas = Button(frame_operacoes, command=adicionar_despesas, image=img_add_despesas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
 botao_inserir_despesas.place(x=110, y=131)
 
 #botao excluir
@@ -288,7 +404,7 @@ l_excluir.place(x=10, y=190)
 img_delete = Image.open('delete.png')
 img_delete = img_delete.resize((17, 17))
 img_delete = ImageTk.PhotoImage(img_delete)
-botao_deletar = Button(frame_operacoes, image=img_delete, text=" Deletar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_deletar = Button(frame_operacoes, command= deletar_dados, image=img_delete, text=" Deletar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
 botao_deletar.place(x=110, y=190)
 
 #configurando receitas
@@ -311,7 +427,7 @@ e_valor_receitas.place(x=110, y=71)
 img_add_receitas = Image.open('add.png')
 img_add_receitas = img_add_receitas.resize((17, 17))
 img_add_receitas = ImageTk.PhotoImage(img_add_receitas)
-botao_inserir_receitas = Button(frame_configuracao, image=img_add_receitas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
+botao_inserir_receitas = Button(frame_configuracao,command=adicionar_receitas, image=img_add_receitas, text=" Adicionar".upper(), width=80, compound=LEFT, anchor=NW, font=('Ivy 7 bold'), bg=cor1, fg=cor0, overrelief=RIDGE)
 botao_inserir_receitas.place(x=110, y=111)
 
 #configurando nova categoria
