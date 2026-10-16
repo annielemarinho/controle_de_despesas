@@ -155,25 +155,23 @@ def deletar_dados():
         treev_dicionario = tree.item(treev_dados)
         treev_lista = treev_dicionario['values']
         
-        # Verifica se algo foi selecionado para evitar erro de lista vazia
         if not treev_lista:
             messagebox.showerror('Erro', 'Selecione um dos dados na tabela')
             return
 
-        # Extrai os dados da linha selecionada
-        id_registro = treev_lista[0]      # O ID do banco de dados
-        categoria_registro = treev_lista[1] # A categoria (ex: 'Receita' ou 'Aluguel')
+        id_registro = treev_lista[0]      
+        tipo_registro = treev_lista[4] 
 
-        # Se a categoria for exatamente 'Receita', deleta da tabela de receitas
-        if categoria_registro == 'Receita':
+        if tipo_registro == 'Receita':
             deletar_receitas([id_registro])
-        else:
-            # Caso contrário (qualquer outra categoria), deleta da tabela de gastos
+        elif tipo_registro == "Despesa":
             deletar_gastos([id_registro])
+        else:
+            messagebox.showerror('Error', 'Tipo de registro desconhecido')
+            return
 
         messagebox.showinfo('Sucesso', 'Os dados foram deletados com sucesso')
-
-        # Atualiza todos os componentes visuais após a exclusão
+        
         mostrar_tabela()
         porcentagem()
         grafico_bar()
@@ -181,7 +179,6 @@ def deletar_dados():
         grafico_pizza()
 
     except Exception as e:
-        # Mostra o erro real caso algo dê errado no processo
         messagebox.showerror('Erro', f'Não foi possível deletar: {e}')
 
 # porcentagem
@@ -286,6 +283,9 @@ def grafico_pizza():
     categorias, valores = pie_valores()
 
     if not valores:
+        if _canvas_pizza is not None:
+            _canvas_pizza.get_tk_widget().destroy()
+            _canvas_pizza = None
         return
 
     cores = ['#4e79a7', '#76b7b2', '#9cba5a']
@@ -334,10 +334,10 @@ def mostrar_tabela():
     if tree is not None:
         tree.destroy()
 
-    tabela_head = ['#Id', 'Categoria', 'Data', 'Quantia']
+    tabela_head = ['#Id', 'Categoria', 'Data', 'Quantia', 'Tipo']
     lista_itens = tabela()
 
-    tree = ttk.Treeview(frame_renda, selectmode="extended", columns=tabela_head, show="headings")
+    tree = ttk.Treeview(frame_renda, selectmode="extended", columns=tabela_head, displaycolumns=tabela_head[:4], show="headings")
     vsb = ttk.Scrollbar(frame_renda, orient="vertical", command=tree.yview)
     hsb = ttk.Scrollbar(frame_renda, orient="horizontal", command=tree.xview)
 
@@ -350,7 +350,7 @@ def mostrar_tabela():
     hd = ["center", "center", "center", "center"]
     h = [30, 100, 100, 100]
 
-    for n, col in enumerate(tabela_head):
+    for n, col in enumerate(tabela_head[:4]):
         tree.heading(col, text=col.title(), anchor=CENTER)
         tree.column(col, width=h[n], anchor=hd[n])
 

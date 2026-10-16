@@ -49,7 +49,10 @@ def ver_gastos():
 
 #função para dados na tabela 
 def tabela():
-    return ver_gastos() + ver_receitas()
+    gastos = [(*registro, "Despesa") for registro in ver_gastos()]
+    receitas = [(*registro, "Receita") for registro in ver_receitas()]
+
+    return gastos + receitas
 
 #função grafico bar
 def bar_valores():
@@ -70,5 +73,8 @@ def porcentagem_valor():
     despesas_total = sum(i[3] for i in ver_gastos())
     if receita_total == 0:
         return [0.0]
-    return [((receita_total - despesas_total) / receita_total) * 100]
+
+    porcentagem_gasta = (despesas_total / receita_total) * 100
+    
+    return [porcentagem_gasta]
 
