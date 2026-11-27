@@ -381,7 +381,14 @@ combo_categoria_despesas.place(x=110, y=41)
 #despesas
 l_cal_despesas = Label(frame_operacoes, text='Data', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
 l_cal_despesas.place(x=10, y=70)
-e_cal_despesas = DateEntry(frame_operacoes, width=12, background='darkblues', foreground='white', borderwidth=2, year=2026)
+e_cal_despesas = DateEntry(
+    frame_operacoes, width=12, 
+    background='darkblues', 
+    foreground='white', 
+    borderwidth=2, 
+    year=2026, 
+    date_pattern='dd/mm/yyyy'
+    )
 e_cal_despesas.place(x=110, y=71)
 
 #valor
@@ -414,7 +421,15 @@ l_info.place(x=10, y=10)
 #calendario
 l_cal_receitas = Label(frame_configuracao, text='Data', height=1, anchor=NW, font=('Ivy 10'), bg=cor1, fg=cor4)
 l_cal_receitas.place(x=10, y=40)
-e_cal_receitas = DateEntry(frame_configuracao, width=12, background='darkblues', foreground='white', borderwidth=2, year=2026)
+e_cal_receitas = DateEntry(
+    frame_configuracao, 
+    width=12, 
+    background='darkblues', 
+    foreground='white', 
+    borderwidth=2, 
+    year=2026,
+    date_pattern='dd/mm/yyyy'
+    )
 e_cal_receitas.place(x=110, y=41)
 
 #valor
